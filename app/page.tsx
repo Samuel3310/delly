@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useCart, PRODUCTS, Product } from "./context/CartContext";
+import { useCart, Product } from "./context/CartContext";
 
 // ─── Toast System ────────────────────────────────────────────────────────────
 interface Toast {
@@ -101,6 +101,21 @@ function useTypewriter(text: string, speed = 45, startDelay = 200) {
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { addToCart, addToCartWithQty, totalQuantity } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data);
+        setLoadingProducts(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch products", err);
+        setLoadingProducts(false);
+      });
+  }, []);
 
   // ── Modal state ──
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -210,21 +225,9 @@ export default function Home() {
       `}</style>
 
       <div className="bg-[#0b0c10] min-h-screen text-white font-sans scroll-smooth">
-        {/* ── HERO ──────────────────────────────────────────────────────── */}
-        <section className="relative h-screen w-full overflow-hidden flex flex-col justify-between items-center p-6 md:p-8">
-          <video
-            ref={videoRef}
-            className="absolute  inset-0 w-full h-full object-cover z-0"
-            src="/video/hero.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-          />
-          <div className="absolute inset-0 bg-black/65 z-10" />
-
-          {/* Header */}
-          <div className="relative z-20 w-full max-w-7xl mx-auto flex justify-between items-center">
+        {/* Header */}
+        <header className="fixed top-0 left-0 w-full z-50 px-6 py-4 md:px-8 bg-[#0b0c10]/70 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/35">
                 <svg
@@ -250,7 +253,7 @@ export default function Home() {
             {/* Cart Icon */}
             <Link
               href="/cart"
-              className="relative p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+              className="relative p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center cursor-pointer"
             >
               <svg
                 className="w-6 h-6 text-slate-200"
@@ -272,6 +275,20 @@ export default function Home() {
               )}
             </Link>
           </div>
+        </header>
+
+        {/* ── HERO ──────────────────────────────────────────────────────── */}
+        <section className="relative h-screen w-full overflow-hidden flex flex-col justify-center items-center p-6 md:p-8 pt-24">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            src="/video/hero.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+          <div className="absolute inset-0 bg-black/65 z-10" />
 
           {/* Hero Text */}
           <div className="relative z-20 flex flex-col items-center justify-center text-center gap-5 my-auto max-w-3xl px-4">
@@ -353,78 +370,120 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {PRODUCTS.map((product) => (
-              <div
-                key={product.id}
-                className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col"
-              >
-                {/* Clickable image area → opens modal */}
-                <button
-                  onClick={() => openModal(product)}
-                  className="relative w-full h-56 overflow-hidden bg-slate-900 text-left block cursor-pointer"
+          {loadingProducts ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {products.map((product) => (
+                <div
+                  key={product._id}
+                  className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col"
                 >
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {/* In Stock badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      In Stock
-                    </span>
-                  </div>
-                  {/* Price tag */}
-                  <div className="absolute bottom-4 right-4 bg-black/75 backdrop-blur-md border border-white/10 px-3.5 py-1.5 rounded-xl">
-                    <span className="text-sm font-black text-indigo-300">
-                      ₦{product.price.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-slate-400 ml-1">
-                      / {product.unit}
-                    </span>
-                  </div>
-                  {/* Quick-view hint on hover */}
-                  <div className="absolute inset-0 bg-indigo-900/0 group-hover:bg-indigo-900/20 transition-colors duration-300 flex items-center justify-center">
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20">
-                      View Details
-                    </span>
-                  </div>
-                </button>
-
-                {/* Card body */}
-                <div className="p-5 flex flex-col flex-grow">
-                  {/* Clickable title → opens modal */}
+                  {/* Clickable image area → opens modal */}
                   <button
                     onClick={() => openModal(product)}
-                    className="font-bold text-base text-white group-hover:text-indigo-300 transition-colors leading-tight mb-4 flex-grow text-left cursor-pointer hover:underline decoration-indigo-400/50 w-full"
+                    className="relative w-full h-56 overflow-hidden bg-slate-900 text-left block cursor-pointer"
                   >
-                    {product.name}
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* In Stock badge */}
+                    {product.inStock ? (
+                      <div className="absolute top-4 left-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg backdrop-blur-md">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          In Stock
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute top-4 left-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-red-500/10 text-red-400 border border-red-500/20 shadow-lg backdrop-blur-md">
+                          Out of Stock
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Discount badge */}
+                    {product.hasDiscount && (
+                      <div className="absolute top-4 right-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>
+                          Promo
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Price tag */}
+                    <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-white/10 px-3.5 py-1.5 rounded-xl shadow-xl">
+                      {product.hasDiscount && product.discountPrice ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-black text-emerald-400">
+                            ₦{product.discountPrice.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 line-through">
+                            ₦{product.price.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-slate-500 ml-0.5">
+                            / {product.unit}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline">
+                          <span className="text-sm font-black text-indigo-300">
+                            ₦{product.price.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-slate-400 ml-1">
+                            / {product.unit}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Quick-view hint on hover */}
+                    <div className="absolute inset-0 bg-indigo-900/0 group-hover:bg-indigo-900/20 transition-colors duration-300 flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 shadow-xl">
+                        View Details
+                      </span>
+                    </div>
                   </button>
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="w-full bg-white/5 border border-white/10 hover:bg-indigo-600 hover:border-transparent text-white font-bold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group-hover:bg-indigo-600/90 active:scale-[0.98] text-sm cursor-pointer"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
+
+                  {/* Card body */}
+                  <div className="p-5 flex flex-col flex-grow">
+                    {/* Clickable title → opens modal */}
+                    <button
+                      onClick={() => openModal(product)}
+                      className="font-bold text-base text-white group-hover:text-indigo-300 transition-colors leading-tight mb-4 flex-grow text-left cursor-pointer hover:underline decoration-indigo-400/50 w-full"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Add to Cart
-                  </button>
+                      {product.name}
+                    </button>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={!product.inStock}
+                      className="w-full bg-white/5 border border-white/10 hover:bg-indigo-600 hover:border-transparent text-white font-bold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group-hover:bg-indigo-600/90 active:scale-[0.98] text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:border-white/10"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── FOOTER ────────────────────────────────────────────────────── */}
@@ -504,15 +563,28 @@ export default function Home() {
             {/* Modal content */}
             <div className="p-6 space-y-5">
               <div>
-                <h2 className="text-xl font-extrabold text-white leading-tight">
+                <h2 className="text-xl font-extrabold text-white leading-tight flex items-center gap-2">
                   {selectedProduct.name}
+                  {selectedProduct.hasDiscount && (
+                     <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-500 text-white tracking-widest shrink-0">Promo</span>
+                  )}
                 </h2>
-                <p className="text-indigo-300 font-bold mt-1">
-                  ₦{selectedProduct.price.toLocaleString()}
-                  <span className="text-slate-400 font-normal text-xs ml-1">
-                    / {selectedProduct.unit}
-                  </span>
-                </p>
+                {selectedProduct.hasDiscount && selectedProduct.discountPrice ? (
+                  <p className="mt-1">
+                    <span className="text-emerald-400 font-extrabold text-lg">₦{selectedProduct.discountPrice.toLocaleString()}</span>
+                    <span className="text-slate-500 font-bold text-xs line-through ml-2">₦{selectedProduct.price.toLocaleString()}</span>
+                    <span className="text-slate-400 font-normal text-xs ml-1">
+                      / {selectedProduct.unit}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-indigo-300 font-bold mt-1">
+                    ₦{selectedProduct.price.toLocaleString()}
+                    <span className="text-slate-400 font-normal text-xs ml-1">
+                      / {selectedProduct.unit}
+                    </span>
+                  </p>
+                )}
               </div>
 
               {/* Quantity stepper */}
@@ -540,7 +612,7 @@ export default function Home() {
                 <span className="ml-auto text-sm font-bold text-white">
                   Total:{" "}
                   <span className="text-indigo-300">
-                    ₦{(selectedProduct.price * modalQty).toLocaleString()}
+                    ₦{((selectedProduct.hasDiscount && selectedProduct.discountPrice ? selectedProduct.discountPrice : selectedProduct.price) * modalQty).toLocaleString()}
                   </span>
                 </span>
               </div>

@@ -29,12 +29,12 @@ export default function CheckoutPage() {
     setMounted(true);
   }, []);
 
-  const handleCheckoutSubmit = (e: React.FormEvent) => {
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || !address) return;
 
     const orderNumber = 'DL-' + Math.floor(100000 + Math.random() * 900000);
-    setPlacedOrder({
+    const orderData = {
       orderNumber,
       phone,
       address,
@@ -42,9 +42,23 @@ export default function CheckoutPage() {
       paymentMethod,
       items: [...cart],
       total: grandTotal
-    });
+    };
 
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+    } catch(e) {
+      console.error("Failed to post order to server", e);
+    }
+
+    setPlacedOrder(orderData);
     clearCart();
+    setPhone('');
+    setAddress('');
+    setDetails('');
     router.push('/confirmation');
   };
 

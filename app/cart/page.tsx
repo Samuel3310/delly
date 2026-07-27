@@ -56,7 +56,7 @@ export default function CartPage() {
             <div className="lg:col-span-2 space-y-4">
               {cart.map((item) => (
                 <div 
-                  key={item.product.id}
+                  key={item.product._id}
                   className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl"
                 >
                   {/* Item Thumbnail */}
@@ -76,14 +76,14 @@ export default function CartPage() {
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-2">
                       <button 
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
                         className="w-7 h-7 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg flex items-center justify-center font-bold text-sm transition-all cursor-pointer select-none"
                       >
                         -
                       </button>
                       <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
                       <button 
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
                         className="w-7 h-7 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg flex items-center justify-center font-bold text-sm transition-all cursor-pointer select-none"
                       >
                         +
@@ -94,7 +94,7 @@ export default function CartPage() {
                   {/* Actions / Total */}
                   <div className="flex flex-col items-end gap-3 justify-between self-stretch">
                     <button 
-                      onClick={() => removeFromCart(item.product.id)}
+                      onClick={() => removeFromCart(item.product._id)}
                       className="text-slate-400 hover:text-rose-500 transition-colors p-1 cursor-pointer"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

@@ -3,12 +3,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Product {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   image: string;
   inStock: boolean;
   unit: string;
+  hasDiscount?: boolean;
+  discountPrice?: number | null;
 }
 
 export interface CartItem {
@@ -45,7 +47,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const PRODUCTS: Product[] = [
   {
-    id: 'rice',
+    _id: 'rice',
     name: 'Long Grain Parboiled Rice',
     price: 35000,
     image: '/images/rice.png',
@@ -53,7 +55,7 @@ export const PRODUCTS: Product[] = [
     unit: 'bag (50kg)'
   },
   {
-    id: 'egg',
+    _id: 'egg',
     name: 'Farm Fresh Eggs',
     price: 4500,
     image: '/images/egg.png',
@@ -61,7 +63,7 @@ export const PRODUCTS: Product[] = [
     unit: 'crate (30 eggs)'
   },
   {
-    id: 'yam',
+    _id: 'yam',
     name: 'New Season Yam',
     price: 3500,
     image: '/images/yam.png',
@@ -69,7 +71,7 @@ export const PRODUCTS: Product[] = [
     unit: 'tuber'
   },
   {
-    id: 'sweet-potato',
+    _id: 'sweet-potato',
     name: 'Sweet Potatoes',
     price: 2000,
     image: '/images/sweet-potato.png',
@@ -77,7 +79,7 @@ export const PRODUCTS: Product[] = [
     unit: 'kg'
   },
   {
-    id: 'beans',
+    _id: 'beans',
     name: 'Premium Brown Beans',
     price: 2500,
     image: '/images/beans.jpg',
@@ -85,7 +87,7 @@ export const PRODUCTS: Product[] = [
     unit: 'kg'
   },
   {
-    id: 'garri',
+    _id: 'garri',
     name: 'White Ijebu Garri',
     price: 1800,
     image: '/images/garri.jpg',
@@ -93,7 +95,7 @@ export const PRODUCTS: Product[] = [
     unit: 'kg'
   },
   {
-    id: 'groundnut',
+    _id: 'groundnut',
     name: 'Roasted Groundnuts',
     price: 1500,
     image: '/images/groundnut.webp',
@@ -129,11 +131,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToCart = (product: Product) => {
-    const existing = cart.find(item => item.product.id === product.id);
+    const existing = cart.find(item => item.product._id === product._id);
     let newCart: CartItem[];
     if (existing) {
       newCart = cart.map(item =>
-        item.product.id === product.id
+        item.product._id === product._id
           ? { ...item, quantity: item.quantity + 1 }
           : item
       );
@@ -145,11 +147,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Single atomic update for adding multiple units (avoids stale-closure loop bug)
   const addToCartWithQty = (product: Product, qty: number) => {
-    const existing = cart.find(item => item.product.id === product.id);
+    const existing = cart.find(item => item.product._id === product._id);
     let newCart: CartItem[];
     if (existing) {
       newCart = cart.map(item =>
-        item.product.id === product.id
+        item.product._id === product._id
           ? { ...item, quantity: item.quantity + qty }
           : item
       );
@@ -162,17 +164,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = (productId: string, quantity: number) => {
     let newCart: CartItem[];
     if (quantity <= 0) {
-      newCart = cart.filter(item => item.product.id !== productId);
+      newCart = cart.filter(item => item.product._id !== productId);
     } else {
       newCart = cart.map(item => 
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product._id === productId ? { ...item, quantity } : item
       );
     }
     saveCart(newCart);
   };
 
   const removeFromCart = (productId: string) => {
-    const newCart = cart.filter(item => item.product.id !== productId);
+    const newCart = cart.filter(item => item.product._id !== productId);
     saveCart(newCart);
   };
 
@@ -181,7 +183,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const activePrice = item.product.hasDiscount && item.product.discountPrice ? item.product.discountPrice : item.product.price;
+    return sum + (activePrice * item.quantity);
+  }, 0);
   
   // Free delivery for orders above ₦50,000, otherwise ₦2,500 delivery fee
   const deliveryFee = subtotal > 50000 || subtotal === 0 ? 0 : 2500;
